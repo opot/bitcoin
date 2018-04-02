@@ -1625,8 +1625,6 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-#include "../script/standard.h"
-
 UniValue getutxo(const JSONRPCRequest& request) {
     std::string result = "Test";
 
@@ -1637,8 +1635,10 @@ UniValue getutxo(const JSONRPCRequest& request) {
     while (pcursor->Valid()) {
         COutPoint key;
         Coin coin;
-        CTxDestination destination;
+        //CTxDestination destination;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            void *path = (void*)new char[sizeof(CTxDestination)];
+            ExtractDestination(coin.out.scriptPubKey, (CTxDestination*) path);
             //result += coin. + "\n";
         } else {
             return "unable to read value";
