@@ -1626,7 +1626,29 @@ UniValue savemempool(const JSONRPCRequest& request)
 }
 
 UniValue getutxo(const JSONRPCRequest& request) {
-    return "Test method invocation";
+    std::string result = "";
+
+    FlushStateToDisk();
+
+    std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
+
+    while (pcursor->Valid()) {
+        boost::this_thread::interruption_point();
+        COutPoint key;
+        Coin coin;
+        CTxDestination destination;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            if (ExtractDestination(coin.out.scriptPubKey, destination)) {
+                result += std::to_string(coin.out.nValue);
+            }
+        } else {
+            return error("%s: unable to read value", __func__);
+        }
+
+        pcursor->Next();
+    }
+
+    return result;
 }
 
 static const CRPCCommand commands[] =
