@@ -1626,14 +1626,14 @@ UniValue savemempool(const JSONRPCRequest& request)
 }
 
 UniValue getutxo(const JSONRPCRequest& request) {
-    std::string result = "";
+    std::string result = "Test";
 
     FlushStateToDisk();
 
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
 
     while (pcursor->Valid()) {
-        boost::this_thread::interruption_point();
+        /*boost::this_thread::interruption_point();
         COutPoint key;
         Coin coin;
         CTxDestination destination;
@@ -1643,7 +1643,7 @@ UniValue getutxo(const JSONRPCRequest& request) {
             }
         } else {
             return error("%s: unable to read value", __func__);
-        }
+        }*/
 
         pcursor->Next();
     }
