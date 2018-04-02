@@ -1638,8 +1638,13 @@ UniValue getutxo(const JSONRPCRequest& request) {
         //CTxDestination destination;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
             void *path = (void*)new char[sizeof(CTxDestination)];
-            ExtractDestination(coin.out.scriptPubKey, (CTxDestination*) path);
-            //result += coin. + "\n";
+            txnouttype whichType;
+            std::vector<std::vector<unsigned char> > vSolutions;
+            txnouttype whichTypee;
+            if (!Solver(coin.out.scriptPubKey, whichTypee, vSolutions)){
+                return "Error type";
+            }
+            result += GetTxnOutputType(whichTypee);
         } else {
             return "unable to read value";
         }
