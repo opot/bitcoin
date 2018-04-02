@@ -1633,17 +1633,16 @@ UniValue getutxo(const JSONRPCRequest& request) {
     std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
 
     while (pcursor->Valid()) {
-        /*boost::this_thread::interruption_point();
         COutPoint key;
         Coin coin;
         CTxDestination destination;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
-            if (ExtractDestination(coin.out.scriptPubKey, destination)) {
-                result += std::to_string(coin.out.nValue);
-            }
+            //if (ExtractDestination(coin.out.scriptPubKey, destination)) {
+            //    result += std::to_string(coin.out.nValue);
+            //}
         } else {
-            return error("%s: unable to read value", __func__);
-        }*/
+            return "unable to read value";
+        }
 
         pcursor->Next();
     }
