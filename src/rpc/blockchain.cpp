@@ -1625,7 +1625,7 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-#include <standard.h>
+#include "../script/standard.h"
 
 UniValue getutxo(const JSONRPCRequest& request) {
     std::string result = "Test";
