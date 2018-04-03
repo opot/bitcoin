@@ -1625,8 +1625,27 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+struct Stat :public boost::static_visitor<void> {
+    std::string result = "Test\n";
+
+    Stat() {}
+
+    void operator()(const CNoDestination &dest) {}
+    void operator()(const CKeyID &dest) {
+        result += dest.ToString() + "\n";
+    }
+
+    void operator()(const CScriptID &dest) {}
+
+    void operator()(const WitnessV0KeyHash &dest) {}
+
+    void operator()(const WitnessV0ScriptHash &dest) {}
+
+    void operator()(const WitnessUnknown &dest) {}
+} stat;
+
 UniValue getutxo(const JSONRPCRequest& request) {
-    std::string result = "Test";
+    Stat answer;
 
     FlushStateToDisk();
 
@@ -1635,24 +1654,19 @@ UniValue getutxo(const JSONRPCRequest& request) {
     while (pcursor->Valid()) {
         COutPoint key;
         Coin coin;
-        //CTxDestination destination;
+        CTxDestination destination;
         if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
-            void *path = (void*)new char[sizeof(CTxDestination)];
-            txnouttype whichType;
-            std::vector<std::vector<unsigned char> > vSolutions;
-            txnouttype whichTypee;
-            if (!Solver(coin.out.scriptPubKey, whichTypee, vSolutions)){
-                return "Error type";
+            if (ExtractDestination(coin.out.scriptPubKey, destination)) {
+                boost::apply_visitor(answer, destination);
             }
-            result += GetTxnOutputType(whichTypee);
         } else {
-            return "unable to read value";
+            return "Error while reading db.";
         }
 
         pcursor->Next();
     }
 
-    return result;
+    return answer.result;
 }
 
 static const CRPCCommand commands[] =
