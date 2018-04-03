@@ -1654,6 +1654,7 @@ struct Stat :public boost::static_visitor<void> {
             result.push_back(char2int(*src)*16 + char2int(src[1]));
             src += 2;
         }
+        return result;
     }
 
     std::string EncodeBase58Cck(const std::vector<unsigned char>& vchIn)
