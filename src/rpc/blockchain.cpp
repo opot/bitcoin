@@ -1628,24 +1628,45 @@ UniValue savemempool(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+#include <base58.h>
+
 struct Stat :public boost::static_visitor<void> {
     std::string result = "Test\n";
 
     Stat() {}
 
+    int char2int(char input)
+    {
+        if(input >= '0' && input <= '9')
+            return input - '0';
+        if(input >= 'A' && input <= 'F')
+            return input - 'A' + 10;
+        if(input >= 'a' && input <= 'f')
+            return input - 'a' + 10;
+        throw std::invalid_argument("Invalid input string");
+    }
+
+    std::vector<unsigned char> hex2bin(const char* src)
+    {
+        std::vector<unsigned char> result;
+        while(*src && src[1])
+        {
+            result.push_back(char2int(*src)*16 + char2int(src[1]));
+            src += 2;
+        }
+    }
+
     void operator()(const CNoDestination &dest) {}
     void operator()(const CKeyID &dest) {
-        result += dest.GetHex() + "\n";
+        auto binary = hex2bin(dest.GetHex().c_str());
+        result += EncodeBase58Check(binary) + "\n";
     }
 
-    void operator()(const CScriptID &dest) {
-    }
+    void operator()(const CScriptID &dest) {}
 
-    void operator()(const WitnessV0KeyHash &dest) {
-    }
+    void operator()(const WitnessV0KeyHash &dest) {}
 
-    void operator()(const WitnessV0ScriptHash &dest) {
-    }
+    void operator()(const WitnessV0ScriptHash &dest) {}
 
     void operator()(const WitnessUnknown &dest) {}
 } stat;
