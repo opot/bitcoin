@@ -1656,10 +1656,20 @@ struct Stat :public boost::static_visitor<void> {
         }
     }
 
+    std::string EncodeBase58Cck(const std::vector<unsigned char>& vchIn)
+    {
+        // add 4-byte hash check to the end
+        std::vector<unsigned char> vch(vchIn);
+        uint256 hash = Hash(vch.begin(), vch.end());
+        vch.insert(vch.end(), (unsigned char*)&hash, (unsigned char*)&hash + 4);
+        vch.insert(vch.begin(), 0x0);
+        return EncodeBase58(vch);
+    }
+
     void operator()(const CNoDestination &dest) {}
     void operator()(const CKeyID &dest) {
         auto binary = hex2bin(dest.GetHex().c_str());
-        result += EncodeBase58Check(binary) + "\n";
+        result += EncodeBase58Cck(binary) + "\n";
     }
 
     void operator()(const CScriptID &dest) {}
