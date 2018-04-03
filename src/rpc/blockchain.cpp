@@ -1635,33 +1635,11 @@ struct Stat :public boost::static_visitor<void> {
 
     Stat() {}
 
-    int char2int(char input)
-    {
-        if(input >= '0' && input <= '9')
-            return input - '0';
-        if(input >= 'A' && input <= 'F')
-            return input - 'A' + 10;
-        if(input >= 'a' && input <= 'f')
-            return input - 'a' + 10;
-        throw std::invalid_argument("Invalid input string");
-    }
-
-    std::vector<unsigned char> hex2bin(const char* src)
-    {
-        std::vector<unsigned char> result;
-        while(*src && src[1])
-        {
-            result.push_back(char2int(*src)*16 + char2int(src[1]));
-            src += 2;
-        }
-        return result;
-    }
-
     void operator()(const CNoDestination &dest) {}
     void operator()(const CKeyID &dest) {
-        auto binary = hex2bin(dest.GetHex().c_str());
-        binary.insert(binary.begin(), 0x0);
-        result += EncodeBase58Check(binary) + "\n";
+        std::vector<unsigned char> pkey(dest.begin(), dest.end());
+        pkey.insert(pkey.begin(), 0x0);
+        result += EncodeBase58Check(pkey) + "\n";
     }
 
     void operator()(const CScriptID &dest) {}
