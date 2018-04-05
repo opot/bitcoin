@@ -329,6 +329,9 @@ UniValue importmany(const JSONRPCRequest& request) {
     char buf[] = "13fFDLC3qxRZZRVaeHbD5QarYyhWqgCVGE";
     int num = 0;
     WalletRescanReserver reserver(pwallet);
+    if (!reserver.reserve()) {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Wallet is currently rescanning. Abort existing rescan or wait.");
+    }
 
     LOCK2(cs_main, pwallet->cs_wallet);
     for (int i = 0; i < size; i++) {
