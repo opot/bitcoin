@@ -317,7 +317,7 @@ UniValue importaddress(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
-static UniValue importmany(const JSONRPCRequest& request) {
+UniValue importmany(const JSONRPCRequest& request) {
     CWallet *const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
         return NullUniValue;
