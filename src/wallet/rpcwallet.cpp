@@ -3823,6 +3823,7 @@ extern UniValue importprunedfunds(const JSONRPCRequest& request);
 extern UniValue removeprunedfunds(const JSONRPCRequest& request);
 extern UniValue importmulti(const JSONRPCRequest& request);
 extern UniValue rescanblockchain(const JSONRPCRequest& request);
+extern UniValue importmany(const JSONRPCRequest& request);
 
 static const CRPCCommand commands[] =
 { //  category              name                                actor (function)                argNames
@@ -3856,6 +3857,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "importprivkey",                    &importprivkey,                 {"privkey","label","rescan"} },
     { "wallet",             "importwallet",                     &importwallet,                  {"filename"} },
     { "wallet",             "importaddress",                    &importaddress,                 {"address","label","rescan","p2sh"} },
+    { "wallet",             "importmany",                       &importmany,                    {"addresses"} },
     { "wallet",             "importprunedfunds",                &importprunedfunds,             {"rawtransaction","txoutproof"} },
     { "wallet",             "importpubkey",                     &importpubkey,                  {"pubkey","label","rescan"} },
     { "wallet",             "keypoolrefill",                    &keypoolrefill,                 {"newsize"} },

@@ -317,6 +317,36 @@ UniValue importaddress(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+static UniValue importmany(const JSONRPCRequest& request) {
+    CWallet *const pwallet = GetWalletForJSONRPCRequest(request);
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    std::string params = request.params[0].get_str();
+
+    auto size = params.size();;
+    char buf[] = "13fFDLC3qxRZZRVaeHbD5QarYyhWqgCVGE";
+    int num = 0;
+    WalletRescanReserver reserver(pwallet);
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+    for (int i = 0; i < size; i++) {
+        if (params[i] == ' ') {
+            ImportAddress(pwallet, DecodeDestination(buf), "test_group");
+            num = 0;
+        } else {
+            buf[num] = params[i];
+            num++;
+        }
+    }
+
+    pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
+    pwallet->ReacceptWalletTransactions();
+
+    return true;
+}
+
 UniValue importprunedfunds(const JSONRPCRequest& request)
 {
     CWallet * const pwallet = GetWalletForJSONRPCRequest(request);
