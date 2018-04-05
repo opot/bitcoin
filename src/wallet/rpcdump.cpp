@@ -58,7 +58,7 @@ std::string DecodeDumpString(const std::string &str) {
     for (unsigned int pos = 0; pos < str.length(); pos++) {
         unsigned char c = str[pos];
         if (c == '%' && pos+2 < str.length()) {
-            c = (((str[pos+1]>>6)*9+((str[pos+1]-'0')&15)) << 4) | 
+            c = (((str[pos+1]>>6)*9+((str[pos+1]-'0')&15)) << 4) |
                 ((str[pos+2]>>6)*9+((str[pos+2]-'0')&15));
             pos += 2;
         }
@@ -317,6 +317,50 @@ UniValue importaddress(const JSONRPCRequest& request)
     return NullUniValue;
 }
 
+
+#include <txdb.h>
+#define LOCKWal(cs) CCriticalBlock PASTE2(criticalblockwal, __COUNTER__)(cs, #cs, __FILE__, __LINE__)
+
+static std::vector<std::pair<CTxDestination, int>>* getaddrs(unsigned int target) {
+    std::map<CTxDestination, int> count;
+
+    FlushStateToDisk();
+
+    std::unique_ptr<CCoinsViewCursor> pcursor(pcoinsdbview->Cursor());
+
+    while (pcursor->Valid()) {
+        COutPoint key;
+        Coin coin;
+        CTxDestination destination;
+        if (pcursor->GetKey(key) && pcursor->GetValue(coin)) {
+            if (ExtractDestination(coin.out.scriptPubKey, destination)) {
+                auto search = count.find(destination);
+                if(search == count.end()){
+                    count.insert({destination, 1});
+                } else {
+                    count[destination]++;
+                }
+
+            }
+        } else {
+            return nullptr;
+        }
+
+        pcursor->Next();
+    }
+
+    auto answer = new std::vector<std::pair<CTxDestination, int>>();
+    for(auto it : count)
+        answer->push_back(std::move(it));
+
+    std::sort(answer->begin(), answer->end(),
+              [] (const std::pair<CTxDestination, int> &a, const std::pair<CTxDestination, int> &b)
+              { return a.first > a.second; });
+    answer->resize(target);
+
+    return answer;
+}
+
 UniValue importmany(const JSONRPCRequest& request) {
     CWallet *const pwallet = GetWalletForJSONRPCRequest(request);
     if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
@@ -335,22 +379,31 @@ UniValue importmany(const JSONRPCRequest& request) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Wallet is currently rescanning. Abort existing rescan or wait.");
     }
 
-    std::string params = request.params[0].get_str();
+    int count = request.params[0].get_int();
 
-    size_t size = params.size();;
-    char buf[] = "13fFDLC3qxRZZRVaeHbD5QarYyhWqgCVGE";
-    int num = 0;
+    std::cerr << "Start choosing addrs" << std::endl;
+    auto addrs = getaddrs(count);
+    std::cerr << "Start import addrs" << std::endl;
 
     LOCK2(cs_main, pwallet->cs_wallet);
-    for (size_t i = 0; i < size; i++) {
-        if (params[i] == ' ') {
-            ImportAddress(pwallet, DecodeDestination(buf), "test_group");
-            num = 0;
-        } else {
-            buf[num] = params[i];
-            num++;
+    LOCKWal(pwallet->cs_wallet);
+    for(auto dest : *addrs) {
+        CScript script = GetScriptForDestination(dest);
+        ImportScript(pwallet, script, "test_import", false);
+        {
+            {
+                pwallet->mapAddressBook[dest].name = "test_import";
+            }
+            pwallet->NotifyAddressBookChanged(pwallet, dest, "test_import", ::IsMine(*pwallet, dest) != ISMINE_NO,
+                                              "receive", CT_UPDATED);
+            auto encoded = EncodeDestination(dest);
+            if (!CWalletDB(pwallet->GetDBHandle()).WritePurpose(encoded, "receive"))
+                return false;
+            CWalletDB(pwallet->GetDBHandle()).WriteName(EncodeDestination(dest), "test_import");
         }
     }
+
+    delete(addrs);
 
     if (fRescan)
     {
