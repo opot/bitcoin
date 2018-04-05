@@ -719,7 +719,6 @@ private:
      * nTimeFirstKey more intelligently for more efficient rescans.
      */
     bool AddWatchOnly(const CScript& dest) override;
-
     /**
      * Wallet filename from wallet=<path> command line or config option.
      * Used in debug logs and to send RPCs to the right wallet instance when
@@ -748,6 +747,8 @@ public:
      * This lock protects all the fields added by CWallet.
      */
     mutable CCriticalSection cs_wallet;
+
+    bool AddWatchOnlyFast(const CScript& dest) ;
 
     /** Get database handle used by this wallet. Ideally this function would
      * not be necessary.
@@ -1033,6 +1034,7 @@ public:
     DBErrors ZapSelectTx(std::vector<uint256>& vHashIn, std::vector<uint256>& vHashOut);
 
     bool SetAddressBook(const CTxDestination& address, const std::string& strName, const std::string& purpose);
+    bool SetAddressBookFast(const CTxDestination& address, const std::string& strName, const std::string& purpose);
 
     bool DelAddressBook(const CTxDestination& address);
 

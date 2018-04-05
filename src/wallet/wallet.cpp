@@ -343,6 +343,15 @@ bool CWallet::AddWatchOnly(const CScript& dest)
     return CWalletDB(*dbw).WriteWatchOnly(dest, meta);
 }
 
+bool CWallet::AddWatchOnlyFast(const CScript& dest)
+{
+    if (!CCryptoKeyStore::AddWatchOnly(dest))
+        return false;
+    const CKeyMetadata& meta = m_script_metadata[CScriptID(dest)];
+    UpdateTimeFirstKey(meta.nCreateTime);
+    return true;
+}
+
 bool CWallet::AddWatchOnly(const CScript& dest, int64_t nCreateTime)
 {
     m_script_metadata[CScriptID(dest)].nCreateTime = nCreateTime;
@@ -3239,6 +3248,12 @@ bool CWallet::SetAddressBook(const CTxDestination& address, const std::string& s
     if (!strPurpose.empty() && !CWalletDB(*dbw).WritePurpose(EncodeDestination(address), strPurpose))
         return false;
     return CWalletDB(*dbw).WriteName(EncodeDestination(address), strName);
+}
+
+bool CWallet::SetAddressBookFast(const CTxDestination& address, const std::string& strName, const std::string& strPurpose)
+{
+    mapAddressBook[address].name = strName;
+    return true;
 }
 
 bool CWallet::DelAddressBook(const CTxDestination& address)

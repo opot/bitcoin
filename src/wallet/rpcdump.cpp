@@ -319,6 +319,8 @@ UniValue importaddress(const JSONRPCRequest& request)
 
 
 #include <txdb.h>
+#include <pubkey.h>
+#include <utilmoneystr.h>
 #define LOCKWal(cs) CCriticalBlock PASTE2(criticalblockwal, __COUNTER__)(cs, #cs, __FILE__, __LINE__)
 
 static std::vector<std::pair<CTxDestination, int>>* getaddrs(unsigned int target) {
@@ -354,11 +356,18 @@ static std::vector<std::pair<CTxDestination, int>>* getaddrs(unsigned int target
         answer->push_back(std::move(it));
 
     std::sort(answer->begin(), answer->end(),
-              [] (const std::pair<CTxDestination, int> &a, const std::pair<CTxDestination, int> &b)
-              { return a.first > a.second; });
+              [] (const std::pair<CTxDestination, int> &a, const std::pair<CTxDestination, int> &b) -> bool
+              { return a.second > b.second; });
     answer->resize(target);
 
     return answer;
+}
+
+static void ImportAddressFast(CWallet* const pwallet, const CTxDestination& dest, const std::string& strLabel)
+{
+    CScript script = GetScriptForDestination(dest);
+    pwallet->AddWatchOnlyFast(script);
+    pwallet->SetAddressBookFast(dest, strLabel, "receive");
 }
 
 UniValue importmany(const JSONRPCRequest& request) {
@@ -382,24 +391,14 @@ UniValue importmany(const JSONRPCRequest& request) {
     int count = request.params[0].get_int();
 
     std::cerr << "Start choosing addrs" << std::endl;
-    auto addrs = getaddrs(count);
+    std::vector<std::pair<CTxDestination, int> >* addrs = getaddrs(count);
     std::cerr << "Start import addrs" << std::endl;
 
-    LOCK2(cs_main, pwallet->cs_wallet);
-    LOCKWal(pwallet->cs_wallet);
-    for(auto dest : *addrs) {
-        CScript script = GetScriptForDestination(dest);
-        ImportScript(pwallet, script, "test_import", false);
-        {
-            {
-                pwallet->mapAddressBook[dest].name = "test_import";
-            }
-            pwallet->NotifyAddressBookChanged(pwallet, dest, "test_import", ::IsMine(*pwallet, dest) != ISMINE_NO,
-                                              "receive", CT_UPDATED);
-            auto encoded = EncodeDestination(dest);
-            if (!CWalletDB(pwallet->GetDBHandle()).WritePurpose(encoded, "receive"))
-                return false;
-            CWalletDB(pwallet->GetDBHandle()).WriteName(EncodeDestination(dest), "test_import");
+    {
+        LOCK2(cs_main, pwallet->cs_wallet);
+        LOCKWal(pwallet->cs_wallet);
+        for (auto& dest : *addrs) {
+            ImportAddressFast(pwallet, dest.first, "test_import");
         }
     }
 
