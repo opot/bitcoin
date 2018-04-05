@@ -323,18 +323,26 @@ UniValue importmany(const JSONRPCRequest& request) {
         return NullUniValue;
     }
 
-    std::string params = request.params[0].get_str();
+    bool fRescan = false;
+    if (!request.params[1].isNull())
+        fRescan = request.params[1].get_bool();
 
-    auto size = params.size();;
-    char buf[] = "13fFDLC3qxRZZRVaeHbD5QarYyhWqgCVGE";
-    int num = 0;
+    if (fRescan && fPruneMode)
+        throw JSONRPCError(RPC_WALLET_ERROR, "Rescan is disabled in pruned mode");
+
     WalletRescanReserver reserver(pwallet);
-    if (!reserver.reserve()) {
+    if (fRescan && !reserver.reserve()) {
         throw JSONRPCError(RPC_WALLET_ERROR, "Wallet is currently rescanning. Abort existing rescan or wait.");
     }
 
+    std::string params = request.params[0].get_str();
+
+    size_t size = params.size();;
+    char buf[] = "13fFDLC3qxRZZRVaeHbD5QarYyhWqgCVGE";
+    int num = 0;
+
     LOCK2(cs_main, pwallet->cs_wallet);
-    for (int i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         if (params[i] == ' ') {
             ImportAddress(pwallet, DecodeDestination(buf), "test_group");
             num = 0;
@@ -344,8 +352,11 @@ UniValue importmany(const JSONRPCRequest& request) {
         }
     }
 
-    pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
-    pwallet->ReacceptWalletTransactions();
+    if (fRescan)
+    {
+        pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
+        pwallet->ReacceptWalletTransactions();
+    }
 
     return true;
 }
