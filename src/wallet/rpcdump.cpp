@@ -394,23 +394,28 @@ UniValue importmany(const JSONRPCRequest& request) {
     std::vector<std::pair<CTxDestination, int> >* addrs = getaddrs(count);
     std::cerr << "Start import addrs" << std::endl;
 
-    {
+    /*{
         LOCK2(cs_main, pwallet->cs_wallet);
         LOCKWal(pwallet->cs_wallet);
         for (auto& dest : *addrs) {
             ImportAddressFast(pwallet, dest.first, "test_import");
         }
+    }*/
+
+    UniValue result(UniValue::VARR);
+    for(auto& addr : addrs){
+      result.push_back(addr);
     }
 
     delete(addrs);
 
-    if (fRescan)
+    /*if (fRescan)
     {
-        pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true /* update */);
+        pwallet->RescanFromTime(TIMESTAMP_MIN, reserver, true);
         pwallet->ReacceptWalletTransactions();
-    }
+    }*/
 
-    return true;
+    return result;
 }
 
 UniValue importprunedfunds(const JSONRPCRequest& request)
